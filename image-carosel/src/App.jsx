@@ -1,43 +1,84 @@
-import { useState, useEffect } from "react";
 
-const App = () => {
-  const [newImg, setNewImg] = useState(0);
-  const [imgURL, setImgURL] = useState("https://i.redd.it/award_images/t5_2qh1o/ootzpllhcnf31_ExplodeyHeart.png");
+import './App.css';
+import { useEffect } from 'react';
+import { useState } from 'react';
+
+function App() {
+
+  const [images, setImages] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const fetchImages = async () => {
+    setLoading(true);
+    const url = 'https://www.reddit.com/r/aww/top/.json?t=all';
+    const res = await fetch(url);
+    const result = await res.json();
+    const data = result.data.children;
+    // console.log(data);
+    const list = data.filter(
+      (item) =>
+        item.data.url_overridden_by_dest.includes('.jpg'))
+      .map((item) => item.data.url_overridden_by_dest);
+    setImages(list);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      const response = await fetch('https://www.reddit.com/r/aww/top/.json?t=all');
-      const responsejson = await response.json();
-      const children = responsejson.data.children;
-      const all_awardings = children[newImg]?.data?.all_awardings;
-      if (all_awardings && all_awardings.length > 0) {
-        const firstAwarding = all_awardings[0];
-        const icon_url = firstAwarding.icon_url;
-        setImgURL(icon_url);
+    fetchImages();
+  }, []);
+
+
+  const handleClick = (dir) => {
+    console.log('curr index', index);
+    //0
+    const lastIdx = images.length - 1;
+    if (dir === 'left') {
+      if (index === 0) {
+        console.log('last idx ', lastIdx);
+        setIndex(lastIdx);
+      } else {
+        setIndex((idx) => idx - 1)
       }
-    };
+    } else if (dir === 'right') {
+      if (lastIdx === index) {
+        //8 === 8 -> index-> 0
+        setIndex(0);
+      } else {
+        setIndex((idx) => idx + 1);
+      }
+    }
+  }
 
-    fetchData();
-  }, [newImg]);
-
-   useEffect(() => {
-    const interval = setInterval(() => {
-      setNewImg(prevCount => (prevCount === 25 ? 0 : prevCount + 1));
-    }, 3000);
+  useEffect(() => {
+    const tid = setInterval(() => {
+      handleClick('right');
+    }, 1000);
 
     return () => {
-      clearInterval(interval);
-    };
-  }, []);
-  
-  
+      clearInterval(tid);
+    }
+  }, [index])
   return (
-    <>
-      <img src={imgURL} alt="My Image" className='img' />
-      <button onClick={() => setNewImg(prevCount => (prevCount === 0 ? 25 : prevCount - 1))}>left</button>
-      <button onClick={() => setNewImg(prevCount => (prevCount === 25 ? 0 : prevCount + 1))}>right</button>
-    </>
+    <div className="App">
+      {loading ?
+        <div>Loading ....</div> :
+        <>
+          <button
+            onClick={() => handleClick('left')}
+          >
+            {"<"}
+          </button>
+          <img src={images[index]} alt='not-found' />
+          <button
+            onClick={() => handleClick('right')}
+            className='right'>
+            {">"}
+          </button>
+        </>
+      }
+    </div>
   );
-};
+}
 
 export default App;
